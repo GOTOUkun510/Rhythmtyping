@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const WORDS = [
@@ -153,7 +154,13 @@ export default function Home() {
   const urgent = progress < 0.3 && !gameOver;
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black min-h-screen overflow-hidden">
+    <div className="relative flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black min-h-screen overflow-hidden">
+      <Link
+        href="/dvd"
+        className="absolute right-4 top-4 text-sm font-medium text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+      >
+        DVD Emoji →
+      </Link>
       <main
         className={`flex w-full max-w-lg flex-col items-center gap-8 px-8 py-16 transition-transform ${
           urgent ? "animate-shake" : ""
