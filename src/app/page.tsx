@@ -16,6 +16,16 @@ const MIN_BEAT_MS = 260; // fastest the beat can get
 const ACCEL = 0.94; // multiply beat interval by this on each success (speeds up)
 const BEATS_PER_WORD = 6; // time budget per word, in beats (~5s at start tempo)
 
+// Keys that don't count as a "keystroke" toward the typing count
+const NON_KEYSTROKE_KEYS = new Set([
+  "Shift",
+  "Control",
+  "Alt",
+  "Meta",
+  "Tab",
+  "CapsLock",
+]);
+
 function randomWord(exclude?: string) {
   let w = WORDS[Math.floor(Math.random() * WORDS.length)];
   while (w === exclude) {
@@ -35,6 +45,7 @@ export default function Home() {
   const [beatMs, setBeatMs] = useState(START_BEAT_MS);
   const [gameOver, setGameOver] = useState(false);
   const [started, setStarted] = useState(false);
+  const [keystrokes, setKeystrokes] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -123,6 +134,11 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [word, beatMs, started, gameOver]);
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (gameOver || NON_KEYSTROKE_KEYS.has(e.key)) return;
+    setKeystrokes((k) => k + 1);
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (gameOver) return;
     const value = e.target.value;
@@ -149,6 +165,7 @@ export default function Home() {
     setProgress(1);
     setWord(randomWord());
     setInput("");
+    setKeystrokes(0);
   }
 
   const urgent = progress < 0.3 && !gameOver;
@@ -203,6 +220,7 @@ export default function Home() {
               ref={inputRef}
               value={input}
               onChange={handleChange}
+              onKeyDown={handleKeyDown}
               autoFocus
               spellCheck={false}
               className={`w-full rounded-lg border-2 bg-white px-4 py-3 text-xl text-black outline-none dark:bg-zinc-900 dark:text-zinc-50 transition-colors ${
@@ -217,6 +235,10 @@ export default function Home() {
               <span>Score: {score}</span>
               <span>Combo: {combo}</span>
               <span>Speed: {Math.round(START_BEAT_MS / beatMs * 100) / 100}x</span>
+            </div>
+
+            <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              Keystrokes: {keystrokes}
             </div>
 
             {message && (
@@ -238,6 +260,9 @@ export default function Home() {
             </p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Max Combo reached this run: {combo}
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Keystrokes: {keystrokes}
             </p>
             <button
               onClick={restart}
