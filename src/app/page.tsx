@@ -137,6 +137,7 @@ export default function Home() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (gameOver || NON_KEYSTROKE_KEYS.has(e.key)) return;
     setKeystrokes((k) => k + 1);
+    beep(1800, 0.02, 0.12);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
