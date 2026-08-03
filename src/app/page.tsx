@@ -1,34 +1,55 @@
-﻿"use client";
+"use client";
 
+import { useEffect, useRef, useState } from "react";
 import YouTubePlayer from "@/components/YouTubePlayer";
 import Sidebar from "@/components/Sidebar";
+import TypingGame from "@/components/TypingGame";
 import type { YouTubePlayerControls } from "@/hooks/useYouTubePlayer";
+import melt from "@/data/melt.json";
+import type { LyricsData } from "@/types/lyrics";
 
 const VIDEO_ID = "o1jAMSQyVPc";
 const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`;
+const lyrics = melt as LyricsData;
 
-const LYRICS_RAW = `[00:24:17]朝　[00:24:90]目が覚め[00:25:62]て[00:25:76]
-[00:26:38]真っ先に[00:27:79]思い浮か[00:29:51]ぶ　[00:30:23]君の[00:32:12]こと[00:33:92]
-[00:35:52]思い[00:36:52]切っ[00:37:02]て　[00:37:88]前髪を[00:39:02]切った[00:39:62]
-[00:39:76]「どうしたの？」っ[00:41:30]て　聞かれたく[00:43:62]て[00:43:73]`;
+// 最初のノーツの何秒前から準備できるようにするか(TypingGame側のLANE_LEAD_SECONDSと合わせる)
+const LEAD_SECONDS = 3;
+
+function getFirstNoteStart(data: LyricsData): number | null {
+  let first: number | null = null;
+  for (const line of data.lines) {
+    for (const note of line.notes) {
+      if (first === null || note.start < first) first = note.start;
+    }
+  }
+  return first;
+}
 
 export default function Home() {
-  // タイピング判定システムはここで controls を受け取り、
-  // controls.getCurrentTime() をrequestAnimationFrame等のループから呼び出して
-  // ノーツのタイムスタンプと突き合わせる想定。
-  const handleControlsReady = (controls: YouTubePlayerControls) => {
-    void controls;
-  };
+  const [controls, setControls] = useState<YouTubePlayerControls | null>(null);
+  const didSeekRef = useRef(false);
+
+  // プレイヤーの準備ができたら、最初のノーツの3秒前まで自動で頭出しする
+  useEffect(() => {
+    if (!controls || !controls.isReady || didSeekRef.current) return;
+    const firstStart = getFirstNoteStart(lyrics);
+    if (firstStart === null) return;
+    const seekTarget = Math.max(0, firstStart - LEAD_SECONDS);
+    controls.seekTo(seekTarget);
+    didSeekRef.current = true;
+  }, [controls]);
 
   return (
     <div className="flex min-h-screen bg-zinc-900">
       <Sidebar />
       <div className="flex flex-1 flex-col items-center gap-4 px-4 py-10">
-        <YouTubePlayer videoId={VIDEO_ID} onControlsReady={handleControlsReady} />
+        <YouTubePlayer videoId={VIDEO_ID} onControlsReady={setControls} />
         <p className="text-sm text-zinc-400">{VIDEO_URL}</p>
-        <pre className="w-full max-w-2xl whitespace-pre-wrap break-words text-sm text-zinc-50">
-          {LYRICS_RAW}
-        </pre>
+        {controls && controls.isReady ? (
+          <TypingGame lyrics={lyrics} controls={controls} />
+        ) : (
+          <p className="text-sm text-zinc-500">動画の準備中です…</p>
+        )}
       </div>
     </div>
   );

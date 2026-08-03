@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import { useEffect } from "react";
 import { useYouTubePlayer, type YouTubePlayerControls } from "@/hooks/useYouTubePlayer";
 
 interface YouTubePlayerProps {
@@ -19,9 +20,13 @@ export default function YouTubePlayer({
 }: YouTubePlayerProps) {
   const controls = useYouTubePlayer(videoId);
 
-  if (onControlsReady) {
-    onControlsReady(controls);
-  }
+  // レンダー中に親のstateを更新すると
+  // "Cannot update a component while rendering a different component" になるため、
+  // useEffect内で通知する
+  useEffect(() => {
+    onControlsReady?.(controls);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controls.isReady, controls.playbackState]);
 
   return (
     <div className="w-full max-w-2xl">
